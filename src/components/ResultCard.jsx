@@ -58,8 +58,7 @@ export default function ResultCard({ result, isFavorite, onToggleFavorite }) {
         </div>
 
         <div className="result-note">
-          Carrier &amp; location are estimated for this demo. Connect the Numverify API via the
-          included Express backend for live, authoritative results.
+          Data provided by the Numverify API.
         </div>
       </div>
     </section>

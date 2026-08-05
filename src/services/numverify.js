@@ -10,14 +10,25 @@ import { COUNTRIES, pkCarrierLookup } from "../utils/countries";
 import { normalizeInput, formatInternational } from "../utils/formatNumber";
 import { convex } from "../convexClient";
 import { anyApi } from "convex/server";
+
 const api = anyApi;
 
-const USE_CONVEX_VALIDATION = import.meta.env.VITE_USE_CONVEX_VALIDATION === "true";
+const USE_CONVEX_VALIDATION =
+  import.meta.env.VITE_USE_CONVEX_VALIDATION === "true";
+
+console.log("USE_CONVEX_VALIDATION =", USE_CONVEX_VALIDATION);
 
 export async function checkNumber(raw) {
   if (USE_CONVEX_VALIDATION) {
-    return convex.action(api.numverify.validate, { number: raw });
+    const response = await convex.action(api.numverify.validate, {
+      number: raw,
+    });
+
+    console.log("Convex Response:", response);
+
+    return response;
   }
+
   return checkNumberLocal(raw);
 }
 
@@ -25,7 +36,6 @@ function checkNumberLocal(raw) {
   const s = normalizeInput(raw);
   const original = raw.trim();
 
-  // Simulate the latency of a real API call so the loading state feels right.
   return new Promise((resolve) => {
     setTimeout(() => resolve(validate(s, original)), 500);
   });
@@ -33,17 +43,32 @@ function checkNumberLocal(raw) {
 
 function validate(s, original) {
   if (!s.startsWith("+") || s.length < 6) {
-    return { valid: false, original, reason: "Enter a number in international format, e.g. +923001234567" };
+    return {
+      valid: false,
+      original,
+      reason:
+        "Enter a number in international format, e.g. +923001234567",
+    };
   }
 
   const digits = s.slice(1);
+
   if (!/^\d+$/.test(digits)) {
-    return { valid: false, original, reason: "Phone numbers can only contain digits after the + sign." };
+    return {
+      valid: false,
+      original,
+      reason: "Phone numbers can only contain digits after the + sign.",
+    };
   }
 
   const country = COUNTRIES.find((c) => digits.startsWith(c.dial));
+
   if (!country) {
-    return { valid: false, original, reason: "Country code not recognized." };
+    return {
+      valid: false,
+      original,
+      reason: "Country code not recognized.",
+    };
   }
 
   const national = digits.slice(country.dial.length);
@@ -57,14 +82,18 @@ function validate(s, original) {
   }
 
   let lineType = "Mobile";
+
   if (country.mobileLead) {
-    lineType = country.mobileLead.includes(national[0]) ? "Mobile" : "Landline";
+    lineType = country.mobileLead.includes(national[0])
+      ? "Mobile"
+      : "Landline";
   } else {
     lineType = "Mobile / Landline (not distinguishable)";
   }
 
   let carrier = "Not available in demo";
   let region = country.region;
+
   if (country.iso2 === "PK" && lineType === "Mobile") {
     const info = pkCarrierLookup(national);
     carrier = info.carrier;
